@@ -1,0 +1,95 @@
+===============================================================================
+ CONCLUSIONES Y HALLAZGOS - PRUEBA E2E FLUJO DE COMPRA DEMOBLAZE
+ Fecha de ejecución: 27/10/2026 | Navegador: Chrome 156 | Serenity BDD 5.4.1
+===============================================================================
+
+1. RESULTADO GENERAL
+--------------------
+  - Casos ejecutados: 2 (Esquema del escenario con 2 juegos de datos).
+  - Resultado: 2 de 2 exitosos, tanto con interfaz como en modo headless.
+  - El flujo completo funciona: agregar 2 productos -> ver carrito ->
+    formulario de compra -> compra finalizada con "Thank you for your purchase!".
+
+    | Productos                            | Total carrito | Amount confirmación |
+    |--------------------------------------|---------------|---------------------|
+    | Samsung galaxy s6 + Nokia lumia 1520 | 1180          | 1180 USD            |
+    | Sony vaio i5 + Iphone 6 32gb         | 1580          | 1580 USD            |
+
+
+2. HALLAZGOS SOBRE LA APLICACIÓN
+--------------------------------
+  H1. [Defecto] Fecha errónea en la confirmación de compra.
+      Al comprar el 27/10/2026 la confirmación muestra "Date: 27/9/2026".
+      El mes sale con un mes de atraso; el patrón coincide con el uso de
+      Date.getMonth() de JavaScript, que cuenta los meses desde 0.
+      La prueba no lo valida para no dejar el flujo en rojo por un defecto
+      conocido. Queda como evidencia en el adjunto "Detalle de la compra"
+      del reporte.
+
+  H2. [Observación] El formulario de compra no valida los datos.
+      Solo exige que "Name" y "Credit card" no estén vacíos. Acepta cualquier
+      texto como tarjeta (sin validar Luhn, longitud ni dígitos) y no valida
+      mes/año de vencimiento. En un sistema real es un riesgo funcional y de
+      seguridad.
+
+  H3. [Observación] La confirmación de producto agregado es un alert nativo
+      ("Product added.") que aparece después de una petición asíncrona. Hay
+      que esperarlo de forma explícita; si se navega antes, el producto puede
+      no quedar en el carrito.
+
+  H4. [Observación] El carrito se carga por AJAX fila por fila: primero
+      consulta los ítems y luego el detalle de cada producto. El total (#totalp)
+      se recalcula a medida que llegan las filas. Si se lee de inmediato, el
+      carrito aparece incompleto.
+
+  H5. [Observación] El catálogo de inicio solo muestra 9 productos. Productos
+      como "Apple monitor 24" no aparecen sin paginar ("Next") o filtrar por
+      categoría. En la primera ejecución eso hizo fallar uno de los ejemplos y
+      se cambió el juego de datos por productos visibles en la primera página.
+
+  H6. [Observación] La página no usa atributos de prueba (data-test / ids
+      semánticos) en productos, botones ni modales. Se usaron XPath por texto
+      visible ("Add to cart", "Place Order", "Purchase"), que se rompen si
+      cambian los textos o el idioma.
+
+  H7. [Observación] Después de comprar, el carrito se vacía en el servidor.
+      Cada escenario abre el navegador en modo incógnito, así que las
+      ejecuciones no comparten estado.
+
+
+3. DECISIONES DE IMPLEMENTACIÓN
+-------------------------------
+  - Patrón Screenplay (Serenity): separa localizadores (userinterfaces),
+    acciones de negocio (tasks), interacciones técnicas (interactions) y
+    validaciones (questions). Así el código se puede reutilizar y mantener.
+  - Gherkin en español con Esquema del escenario: se agregan más
+    combinaciones de productos sin tocar código.
+  - Esperas explícitas en lugar de pausas fijas (Thread.sleep):
+      * AceptarAlerta: espera el alert, valida su texto y lo acepta.
+      * EsperarCantidadDeElementos: espera a que el carrito tenga N filas.
+      * EsperarQueSeaVisible: espera elementos y modales.
+  - Validaciones más allá de lo pedido: productos del carrito, total = suma
+    de precios, mensaje de confirmación y que el detalle muestre el mismo
+    monto, la tarjeta y el nombre ingresados.
+  - Excepción propia (ValidacionFallidaException) para que el reporte muestre
+    mensajes de fallo claros en español.
+  - Configuración por ambientes y modo headless en serenity.conf, lista para
+    integrarse en un pipeline de CI.
+
+
+4. CONCLUSIONES
+---------------
+  - El flujo principal de compra funciona y es estable de punta a punta. Los
+    totales coinciden entre el carrito y la confirmación.
+  - Se encontró un defecto real (H1, fecha con un mes de atraso) y varias
+    debilidades de validación (H2) que conviene reportar al equipo de
+    desarrollo.
+  - El principal reto de automatizar este sitio es la sincronización (alerts
+    asíncronos, carrito por AJAX, modales con animación). Se resolvió con
+    esperas explícitas, sin tiempos fijos.
+  - Recomendaciones:
+      * Agregar atributos data-test para tener localizadores robustos.
+      * Corregir el cálculo del mes en la confirmación (getMonth() + 1).
+      * Validar formato de tarjeta y fecha de vencimiento en el formulario.
+      * Agregar escenarios negativos (formulario vacío, carrito vacío) y
+        búsqueda de productos por categoría/paginación.
