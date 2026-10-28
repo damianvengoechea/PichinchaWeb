@@ -23,5 +23,5 @@ Característica: Flujo de compra en la tienda Demoblaze
 
     Ejemplos:
       | producto1         | producto2        |
-      | Samsung galaxy s6 | Nokia lumia 1520 |
-      | Sony vaio i5      | Iphone 6 32gb    |
+  #    | Samsung galaxy s6 | Nokia lumia 1520 |
+      | MacBook Pro     | Samsung galaxy s7   |
