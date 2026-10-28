@@ -30,7 +30,7 @@ productos:
 3. EJECUCIÓN PASO A PASO
 ------------------------
   1) Clonar el repositorio:
-       git clone <URL_DEL_REPOSITORIO>
+       git clone https://github.com/damianvengoechea/PichinchaWeb
        cd PruebaPichincha
 
   2) Ejecutar las pruebas:
